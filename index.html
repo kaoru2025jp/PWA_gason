@@ -61,62 +61,47 @@ O2: <input id="O2" type="number" step="any"><br>
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxInAOQKzl3SiwVwm0i9rV9DhSRZHIF7XIA3lHVWZQruf2i4fUOdMx0Le3Mlzj44k81cQ/exec";
 
 function calc() {
-  // 入力値取得（Numberで安定化）
-  const S  = Number(document.getElementById("S").value);
-  const B  = Number(document.getElementById("B").value);
-  const O1 = Number(document.getElementById("O1").value);
-  const O2 = Number(document.getElementById("O2").value);
+  const S  = parseFloat(document.getElementById("S").value);
+  const B  = parseFloat(document.getElementById("B").value);
+  const O1 = parseFloat(document.getElementById("O1").value);
+  const O2 = parseFloat(document.getElementById("O2").value);
 
-  // 入力チェック
-  if (!isFinite(S) || !isFinite(B) || !isFinite(O1) || !isFinite(O2) || O1 === 0 || O2 === 0) {
-    alert("すべての入力欄に有効な数値を入力してください（O1, O2 は 0 以外）");
-    return;
-  }
+  // ===== 基本計算 =====
+  const T1 = ( (B - S) / O1 );
+  const T2 = ( (B - S) / O2 );
 
-  // 計算
-  const T1 = (B - S) / O1;
-  const T2 = (B - S) / O2;
+  document.getElementById("t1").textContent = T1.toFixed(2);
+  document.getElementById("t2").textContent = T2.toFixed(2);
 
-  // 貸借対照表計算
-  const currentAssets = O1 * T2;
-  const currentLiabilities = O2 * T1;
-  const fixedAssets = B - currentAssets;
-  const capital = B - currentLiabilities;
+  // ===== 貸借対照表計算 =====
+  const currentAssets      = O1 * T1;
+  const currentLiabilities = O1 * T2;
+  const fixedAssets        = B - currentAssets;
+  const capital            = B - currentLiabilities;
 
-  // 表示（小数2桁）
   document.getElementById("ca").textContent = currentAssets.toFixed(2);
   document.getElementById("cl").textContent = currentLiabilities.toFixed(2);
   document.getElementById("fa").textContent = fixedAssets.toFixed(2);
   document.getElementById("capital").textContent = capital.toFixed(2);
 
-  // 合計 T 表示
-  const Traw = T1 + T2;
-  if (!isFinite(Traw)) {
-    alert("計算結果が不正です");
-    return;
-  }
-  const T = Traw.toFixed(2);
-  document.getElementById("result").textContent = T;
-
-  // JSONP コールバック名生成
+  // ===== JSONP送信 =====
   const callbackName = "cb_" + Date.now();
   window[callbackName] = function(res) {
-    console.log("GAS応答:", res);
     delete window[callbackName];
   };
 
-  // script タグ作成・送信（キャッシュ回避）
   const script = document.createElement("script");
   script.src =
     GAS_URL +
-    "?t=" + encodeURIComponent(T) +
-    "&callback=" + callbackName +
-    "&_=" + Date.now();  // キャッシュ防止
+    "?T1=" + encodeURIComponent(T1.toFixed(2)) +
+    "&T2=" + encodeURIComponent(T2.toFixed(2)) +
+    "&CA=" + encodeURIComponent(currentAssets.toFixed(2)) +
+    "&CL=" + encodeURIComponent(currentLiabilities.toFixed(2)) +
+    "&FA=" + encodeURIComponent(fixedAssets.toFixed(2)) +
+    "&CAPITAL=" + encodeURIComponent(capital.toFixed(2)) +
+    "&callback=" + callbackName;
 
   document.body.appendChild(script);
-
-  // デバッグ用 URL 表示（スマホ/PCで確認可能）
-  console.log("送信URL:", script.src);
 }
 </script>
 
