@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>計算書（安全版）</title>
+
+<style>
+body {
+  font-family: sans-serif;
+  padding: 20px;
+}
+input, button {
+  margin: 6px 0;
+  width: 100%;
+  max-width: 300px;
+  font-size: 16px;
+  padding: 6px;
+}
+button {
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h2>計算書（安全版）</h2>
+
+S:  <input id="S" type="number" step="any"><br>
+B:  <input id="B" type="number" step="any"><br>
+O1: <input id="O1" type="number" step="any"><br>
+O2: <input id="O2" type="number" step="any"><br>
+<button onclick="calc()">計算して送信</button>
+
+<p>結果 T = <span id="result"></span></p>
+
+<h3>貸借対照表</h3>
+<table border="1" cellpadding="6">
+  <tr>
+    <th>借方</th>
+    <th>金額</th>
+    <th>貸方</th>
+    <th>金額</th>
+  </tr>
+  <tr>
+    <td>流動資産</td>
+    <td id="ca"></td>
+    <td>流動負債</td>
+    <td id="cl"></td>
+  </tr>
+  <tr>
+    <td>固定資産</td>
+    <td id="fa"></td>
+    <td>資本金</td>
+    <td id="capital"></td>
+  </tr>
+</table>
+
+<script>
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxInAOQKzl3SiwVwm0i9rV9DhSRZHIF7XIA3lHVWZQruf2i4fUOdMx0Le3Mlzj44k81cQ/exec";
+
+function calc() {
+  // 入力値取得（Numberで安定化）
+  const S  = Number(document.getElementById("S").value);
+  const B  = Number(document.getElementById("B").value);
+  const O1 = Number(document.getElementById("O1").value);
+  const O2 = Number(document.getElementById("O2").value);
+
+  // 入力チェック
+  if (!isFinite(S) || !isFinite(B) || !isFinite(O1) || !isFinite(O2) || O1 === 0 || O2 === 0) {
+    alert("すべての入力欄に有効な数値を入力してください（O1, O2 は 0 以外）");
+    return;
+  }
+
+  // 計算
+  const T1 = (B - S) / O1;
+  const T2 = (B - S) / O2;
+
+  // 貸借対照表計算
+  const currentAssets = O1 * T2;
+  const currentLiabilities = O2 * T1;
+  const fixedAssets = B - currentAssets;
+  const capital = B - currentLiabilities;
+
+  // 表示（小数2桁）
+  document.getElementById("ca").textContent = currentAssets.toFixed(2);
+  document.getElementById("cl").textContent = currentLiabilities.toFixed(2);
+  document.getElementById("fa").textContent = fixedAssets.toFixed(2);
+  document.getElementById("capital").textContent = capital.toFixed(2);
+
+  // 合計 T 表示
+  const Traw = T1 + T2;
+  if (!isFinite(Traw)) {
+    alert("計算結果が不正です");
+    return;
+  }
+  const T = Traw.toFixed(2);
+  document.getElementById("result").textContent = T;
+
+  // JSONP コールバック名生成
+  const callbackName = "cb_" + Date.now();
+  window[callbackName] = function(res) {
+    console.log("GAS応答:", res);
+    delete window[callbackName];
+  };
+
+  // script タグ作成・送信（キャッシュ回避）
+  const script = document.createElement("script");
+  script.src =
+    GAS_URL +
+    "?t=" + encodeURIComponent(T) +
+    "&callback=" + callbackName +
+    "&_=" + Date.now();  // キャッシュ防止
+
+  document.body.appendChild(script);
+
+  // デバッグ用 URL 表示（スマホ/PCで確認可能）
+  console.log("送信URL:", script.src);
+}
+</script>
+
+</body>
+</html>
