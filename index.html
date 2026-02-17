@@ -78,8 +78,8 @@ function calc() {
   document.getElementById("t2").textContent = T2.toFixed(2);
 
   // ===== 貸借対照表計算 =====
-  const currentAssets      = O1 * T1;
-  const currentLiabilities = O1 * T2;
+  const currentAssets      = O1 * T2;
+  const currentLiabilities = O1 * T1;
   const fixedAssets        = B - currentAssets;
   const capital            = B - currentLiabilities;
 
